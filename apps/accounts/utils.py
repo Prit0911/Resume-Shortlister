@@ -1,7 +1,7 @@
 import secrets
 from django.utils import timezone
 from datetime import timedelta
-
+from rest_framework_simplejwt.tokens import RefreshToken
 from apps.accounts.models import EmailOTP
 
 def generate_otp():
@@ -16,3 +16,10 @@ def generate_and_send_otp(user):
     print(f"OTP for {user.email}: {otp}")
     print(f"OTP expires at: {expires_at}")
     return otp
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }

@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from .serializers import RegisterSerializer
-from .utils import generate_and_send_otp
+from .serializers import RegisterSerializer, EmailVerificationSerializer
+from .utils import generate_and_send_otp, get_tokens_for_user
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -20,5 +20,31 @@ class RegisterView(APIView):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+class EmailVerificationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = EmailVerificationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            otp = serializer.validated_data['code']
+
+            otp.is_used = True
+            otp.save()
+
+            user.is_active=True
+            user.save()
+
+            tokens = get_tokens_for_user(user)
+
+            return Response(
+                {
+                    "message": "Email verified successfully.",
+                    "tokens": tokens,
+                },
+                status = status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         

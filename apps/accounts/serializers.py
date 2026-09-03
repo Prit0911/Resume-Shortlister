@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, EmailOTP
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken 
 
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -54,3 +56,31 @@ class RegisterSerializer(serializers.Serializer):
         user.save()
         return user
 
+class EmailVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+
+    def validate(self, data):
+        email = data['email']
+        code = data['code']
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+
+        otp = EmailOTP.objects.filter(user=user, code=code, is_used=False, expires_at__gt=timezone.now()).first()
+
+        if otp is None:
+            raise serializers.ValidationError("Invalid or expired OTP.")
+
+        if otp.expires_at < timezone.now():
+            raise serializers.ValidationError("OTP has expired.")
+
+        if otp.code != code:
+            raise serializers.ValidationError("Invalid OTP.")
+
+        data['user'] = user
+        data['code'] = otp
+
+        return data
