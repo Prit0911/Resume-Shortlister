@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User, EmailOTP
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken 
+from django.contrib.auth import authenticate
 
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -84,3 +84,26 @@ class EmailVerificationSerializer(serializers.Serializer):
         data['code'] = otp
 
         return data
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data['email']
+        password = data['password']
+
+        user = authenticate(email=email, password=password)
+
+        if user is None:
+            existing_user = User.objects.filter(email=email).first()
+
+            if existing_user and not existing_user.is_active and existing_user.check_password(password):
+                raise serializers.ValidationError(
+                    "Your account is not verified. Please verify your email before logged in."
+                )
+
+            raise serializers.ValidationError("Invalid email or password")
+
+        data["user"]=user
+        return data     
