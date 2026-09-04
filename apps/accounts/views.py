@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from .serializers import RegisterSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer
+from .serializers import RegisterSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer, ChangePasswordSerializer
 from .utils import generate_and_send_otp, get_tokens_for_user
 
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -86,3 +86,19 @@ class LogoutView(APIView):
             return Response({"error":"Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+
+class ChangePassowrdView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+
+        if serializer.is_valid():
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+
+            return Response({
+                "message": "Password changed successfully!"
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

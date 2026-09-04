@@ -110,3 +110,48 @@ class LoginSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     token = serializers.CharField()
+
+# class ForgotPasswordRequestSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+
+#     def validate_email(self, value):
+#         if not User.objects.filter(email=value).exists():
+#             raise serializers.ValidationError('User does not exist')
+
+#         return value
+
+# class PasswordResetConfirmSerializer(serializers.Serializer):
+#     email = serializers.EmailField()
+#     password = serializers.CharField(write_only=True)
+#     password2 = serializers.CharField(write_only=True)
+
+#     def validate_password(self, value):
+#         validate_password(value)
+#         return value
+
+#     def validate(self, data):
+        
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    new_password2 = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+
+    def validate(self, data):
+        user = self.context['request'].user
+
+        if not user.check_password(data['old_password']):
+            raise serializers.ValidationError({"old_password": "Current password is invalid"})
+
+        if data['new_password'] != data['new_password2']:
+            raise serializers.ValidationError({"new_password2":'Passwords do not match.'})
+
+        if data['old_password'] == data['new_password']:
+            raise serializers.ValidationError({'new_password': 'Old password and New password cannot be same'})
+
+        return data
