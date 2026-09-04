@@ -107,3 +107,6 @@ class LoginSerializer(serializers.Serializer):
 
         data["user"]=user
         return data     
+
+class LogoutSerializer(serializers.Serializer):
+    token = serializers.CharField()
