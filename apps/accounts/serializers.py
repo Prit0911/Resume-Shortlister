@@ -111,26 +111,55 @@ class LoginSerializer(serializers.Serializer):
 class LogoutSerializer(serializers.Serializer):
     token = serializers.CharField()
 
-# class ForgotPasswordRequestSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
+class ForgotPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
-#     def validate_email(self, value):
-#         if not User.objects.filter(email=value).exists():
-#             raise serializers.ValidationError('User does not exist')
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('User does not exist')
 
-#         return value
+        return value
 
-# class PasswordResetConfirmSerializer(serializers.Serializer):
-#     email = serializers.EmailField()
-#     password = serializers.CharField(write_only=True)
-#     password2 = serializers.CharField(write_only=True)
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+    password = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(write_only=True)
 
-#     def validate_password(self, value):
-#         validate_password(value)
-#         return value
+    def validate_password(self, value):
+        validate_password(value)
+        return value
 
-#     def validate(self, data):
-        
+    def validate(self, data):
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError({
+                "password2": "Passwords do not match"
+            })
+        try:
+            user = User.objects.get(email=data['email'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError({
+                "email": "Now account found with this email"
+            })
+
+        otp = EmailOTP.objects.filter(user=user, is_used=False).order_by('-created_at').first()
+
+        if otp is None:
+            raise serializers.ValidationError({
+                "code": "No active OTP found for this email"
+            })
+        if otp.expires_at < timezone.now():
+            raise serializers.ValidationError({
+                "code": "This OTP has expired"
+            })
+        if otp.code != data['code']:
+            raise serializers.ValidationError({
+                "code": "Invalid OTP code"
+            })
+
+        data['user'] = user
+        data['code'] = otp
+        return data
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)

@@ -3,12 +3,23 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from .serializers import RegisterSerializer, EmailVerificationSerializer, LoginSerializer, LogoutSerializer, ChangePasswordSerializer
+from .serializers import (
+    RegisterSerializer, 
+    EmailVerificationSerializer, 
+    LoginSerializer, 
+    LogoutSerializer, 
+    ChangePasswordSerializer, 
+    ForgotPasswordRequestSerializer,
+    PasswordResetConfirmSerializer,
+)
+
 from .utils import generate_and_send_otp, get_tokens_for_user
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import IsAuthenticated
+
+from .models import EmailOTP, User
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -101,4 +112,40 @@ class ChangePassowrdView(APIView):
             return Response({
                 "message": "Password changed successfully!"
             })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ForgotPasswordRequestSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = User.objects.get(email=serializer.validated_data['email'])
+            generate_and_send_otp(user)
+
+            return Response({
+                "message": "OTP sent to your email."
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            otp = serializer.validated_data['code']
+
+            otp.is_used = True
+            otp.save()
+
+            user.set_password(serializer.validated_data['password'])
+            user.save()
+
+            return Response({
+                "message": "Password reset successful. Please log in with your new password"
+            }, status=status.HTTP_200_OK,)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
