@@ -11,6 +11,7 @@ from .serializers import (
     ChangePasswordSerializer, 
     ForgotPasswordRequestSerializer,
     PasswordResetConfirmSerializer,
+    UserProfileSerializer,
 )
 
 from .utils import generate_and_send_otp, get_tokens_for_user
@@ -149,3 +150,10 @@ class PasswordResetConfirmView(APIView):
                 "message": "Password reset successful. Please log in with your new password"
             }, status=status.HTTP_200_OK,)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

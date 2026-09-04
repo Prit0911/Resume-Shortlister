@@ -3,6 +3,7 @@ from .models import User, EmailOTP
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from django.contrib.auth import authenticate
+from .utils import generate_and_send_otp
 
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -184,3 +185,9 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({'new_password': 'Old password and New password cannot be same'})
 
         return data
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'role']
+        read_only = fields
