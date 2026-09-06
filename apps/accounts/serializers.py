@@ -202,3 +202,8 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError('This email is already in use')
         return value
+
+class UserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'role', 'is_active', 'date_joined', 'deleted_at']

@@ -3,6 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from django.utils import timezone
+from .permissions import IsAdminRole
+from .filters import UserFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.generics import ListAPIView
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .serializers import (
     RegisterSerializer, 
@@ -14,6 +19,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     UserProfileSerializer,
     UserProfileUpdateSerializer,
+    UserListSerializer,
 )
 
 from .utils import generate_and_send_otp, get_tokens_for_user
@@ -182,3 +188,12 @@ class UserProfileView(APIView):
         user.save(update_fields=['deleted_at', 'is_active'])
 
         return Response({'detail': "Account is deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+class UserListView(ListAPIView):
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserListSerializer
+    permission_classes = [IsAdminRole]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = UserFilter
+    search_fields = ['username', 'email', 'frist_name', 'last_name']
+    ordering_fields = ['date_joined', 'username', 'email']
