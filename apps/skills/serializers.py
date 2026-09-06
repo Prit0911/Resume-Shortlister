@@ -3,6 +3,13 @@ from .models import Skill
 
 class SkillsListSerializer(serializers.ModelSerializer):
      class Meta:
-            model = Skill
-            fields = ['id', 'name', 'slug', 'is_active']
-            read_only_fields = fields
+        model = Skill
+        fields = ['id', 'name', 'slug', 'is_active']
+        read_only_fields = fields
+
+class SkillsCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = ['id', 'name', 'is_active']
+        read_only_fields = ['id']
+    
