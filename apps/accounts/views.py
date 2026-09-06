@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from django.utils import timezone
 
 from .serializers import (
     RegisterSerializer, 
@@ -12,6 +13,7 @@ from .serializers import (
     ForgotPasswordRequestSerializer,
     PasswordResetConfirmSerializer,
     UserProfileSerializer,
+    UserProfileUpdateSerializer,
 )
 
 from .utils import generate_and_send_otp, get_tokens_for_user
@@ -157,3 +159,26 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = UserProfileUpdateSerializer(request.user, data=request.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(UserProfileSerializer(request.user).data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user   # ← remove the parentheses
+
+        if user.deleted_at is not None:
+            return Response(
+                {"detail": "Account is already deleted."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.deleted_at = timezone.now()
+        user.is_active = False
+        user.save(update_fields=['deleted_at', 'is_active'])
+
+        return Response({'detail': "Account is deleted successfully"}, status=status.HTTP_204_NO_CONTENT)

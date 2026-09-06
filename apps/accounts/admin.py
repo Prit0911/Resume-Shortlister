@@ -7,7 +7,7 @@ class UserAdmin(BaseUserAdmin):
     model = User
 
     ordering = ('email',)
-    list_display = ('email', 'username', 'first_name', 'last_name', 'role', 'is_active', 'is_staff')
+    list_display = ('email', 'username', 'first_name', 'last_name', 'role', 'is_active', 'is_staff', 'created_at', 'deleted_at')
     list_filter = ('role', 'is_active', 'is_staff')
     search_fields = ('email', 'username', 'first_name', 'last_name')
 

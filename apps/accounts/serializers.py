@@ -191,3 +191,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'role']
         read_only = fields
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+    def validate_email(self, value):
+        qs = User.objects.filter(email=value).exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('This email is already in use')
+        return value
